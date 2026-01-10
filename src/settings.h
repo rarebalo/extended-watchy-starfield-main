@@ -18,10 +18,13 @@
 #define WLAN_SSID "myWLAN"
 #define WLAN_PWD "myWLANPWD"
 // power saving WLAN configuration if wanted:
-#define WLAN_IP ""	// enter a static ip address outside of the routers dynamic range, set to "" for default WLAN connection	
-#define WLAN_GATEWAY "192.168.0.1" // only needed if WLAN_IP is not an empty string
-#define WLAN_SUBNET "255.255.255.0" // only needed if WLAN_IP is not an empty string
-#define WLAN_DNS "8.8.8.8" // only needed if WLAN_IP is not an empty string, perhaps use GATEWAY IP to speed up
+#define USE_STATIC_IP false
+#if USE_STATIC_IP
+	#define WLAN_IP "192.168.0.199"	// enter a static ip address outside of the routers dynamic range
+	#define WLAN_GATEWAY "192.168.0.1" // only needed if WLAN_IP is not an empty string
+	#define WLAN_SUBNET "255.255.255.0" // only needed if WLAN_IP is not an empty string
+	#define WLAN_DNS "8.8.8.8" // only needed if WLAN_IP is not an empty string, perhaps use GATEWAY IP to speed up
+#endif
 
 #define WEEKDAY_SUN "Sunday"
 #define WEEKDAY_MON "Monday"
