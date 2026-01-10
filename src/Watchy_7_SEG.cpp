@@ -615,42 +615,44 @@ void Watchy7SEG::drawSun() {
   int highest_min = 0;
   int lowest_min = 0;
   
-  
-  if (sr == -1 && ss == -1) {
-    float solar_declination = WatchyDusk2Dawn::getSolarDeclination(year, month, day);
-    if (lat * solar_declination >= 0) {
-      //if (WatchyDusk2Dawn::isPolarWinter(year, month, day, lat, lon, tz, isDST)) {
-      //return; 
-      isPolarSummer = true;
-      highest_min = WatchyDusk2Dawn::getSolarNoonTime (year, month, day, lat, lon, tz, isDST);
-      lowest_min = WatchyDusk2Dawn::getSolarMidnightTime (year, month, day, lat, lon, tz, isDST);
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
+    if (sr == -1 && ss == -1) {
+      float solar_declination = WatchyDusk2Dawn::getSolarDeclination(year, month, day);
+      if (lat * solar_declination >= 0) {
+        //if (WatchyDusk2Dawn::isPolarWinter(year, month, day, lat, lon, tz, isDST)) {
+        //return; 
+        isPolarSummer = true;
+        highest_min = WatchyDusk2Dawn::getSolarNoonTime (year, month, day, lat, lon, tz, isDST);
+        lowest_min = WatchyDusk2Dawn::getSolarMidnightTime (year, month, day, lat, lon, tz, isDST);
 
-      if (lowest_min < highest_min) {
-        sr = lowest_min;
-        ss = highest_min;
-      } else {
-        sr = lowest_min;
-        ss = highest_min;
+        if (lowest_min < highest_min) {
+          sr = lowest_min;
+          ss = highest_min;
+        } else {
+          sr = lowest_min;
+          ss = highest_min;
+        }
       }
     }
-  }
+  #endif
 
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
+    if (isPolarSummer) {
+      double total_minutes_in_day = 1440.0;
+      double now_adjusted = (now_minutes - sr + total_minutes_in_day);
+      now_adjusted = fmod(now_adjusted, total_minutes_in_day);
+      double tx = 95.0 / total_minutes_in_day * now_adjusted;
+      int t = static_cast<int>(std::round(tx)) * 2;
+      if (t < 190) { 
+        bool isNorth = IS_NORTH;
+        int x = 125 + (isNorth ? SunCurve[t] : (61 - SunCurve[t]));
+        int y = 124 - SunCurve[t + 1];
 
-  if (isPolarSummer) {
-    double total_minutes_in_day = 1440.0;
-    double now_adjusted = (now_minutes - sr + total_minutes_in_day);
-    now_adjusted = fmod(now_adjusted, total_minutes_in_day);
-    double tx = 95.0 / total_minutes_in_day * now_adjusted;
-    int t = static_cast<int>(std::round(tx)) * 2;
-    if (t < 190) { 
-      bool isNorth = IS_NORTH;
-      int x = 125 + (isNorth ? SunCurve[t] : (61 - SunCurve[t]));
-      int y = 124 - SunCurve[t + 1];
-
-      display.drawBitmap(x - 9, y - 9, sun, 18, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-      display.drawBitmap(x - 9, y - 9, sundisk, 18, 18, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
-    }
-  } else {
+        display.drawBitmap(x - 9, y - 9, sun, 18, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+        display.drawBitmap(x - 9, y - 9, sundisk, 18, 18, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
+      }
+    } else {
+  #endif
     if (now_minutes >= sr || now_minutes <= ss) {
       bool isNorth = IS_NORTH;
       double tx = 95.0 / (ss - sr) * (now_minutes - sr);
@@ -664,7 +666,9 @@ void Watchy7SEG::drawSun() {
         display.drawBitmap(x - 9, y - 9, sundisk, 18, 18, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
       }
     }
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
   }
+  #endif
 }
 
  
@@ -686,6 +690,7 @@ void Watchy7SEG::drawSunTimes() {
   int lowest_min = 0;
   float solar_declination = 0.0f;
   
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
   if (sr == -1 || ss == -1) {
     solar_declination = -1.0f; // WatchyDusk2Dawn::getSolarDeclination(year, month, day);
     if (lat * solar_declination < 0.0f) {
@@ -705,23 +710,28 @@ void Watchy7SEG::drawSunTimes() {
       }
     }
   }
+  #endif
   
   int travel_range = isPolarSummer ? 1440 : ss - sr;
   long current_minutes = now_minutes;
   int tk;
 
-  if (isPolarSummer) {
-    long minutes_since_sr = (current_minutes - sr + 1440) % 1440;
-    tk = (int)((minutes_since_sr) * 60L / travel_range);
-  } else {
-    if (current_minutes >= ss) {
-      tk = 60;
-    } else if (current_minutes <= sr) {
-      tk = 0;
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
+    if (isPolarSummer) {
+      long minutes_since_sr = (current_minutes - sr + 1440) % 1440;
+      tk = (int)((minutes_since_sr) * 60L / travel_range);
     } else {
-      tk = (int)((current_minutes - sr) * 60L / travel_range);
+  #endif
+      if (current_minutes >= ss) {
+        tk = 60;
+      } else if (current_minutes <= sr) {
+        tk = 0;
+      } else {
+        tk = (int)((current_minutes - sr) * 60L / travel_range);
+      }
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
     }
-  }
+  #endif
 
   float seasonValue = WatchyDusk2Dawn::getCurrentAstronomicalSeasonValue(year, month, day, lat);
   int yy = 71.0f + (seasonValue / 360.0f) * (132.0f - 71.0f);
@@ -757,23 +767,25 @@ void Watchy7SEG::drawSunTimes() {
   int m = 0;
   int s = 0;
 
-  if (isPolarSummer) {
-    int next_min = 0;
-    long time_to_highest = (highest_min - current_minutes + 1440) % 1440;
-    long time_to_lowest = (lowest_min - current_minutes + 1440) % 1440;
+  #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
+    if (isPolarSummer) {
+      int next_min = 0;
+      long time_to_highest = (highest_min - current_minutes + 1440) % 1440;
+      long time_to_lowest = (lowest_min - current_minutes + 1440) % 1440;
 
-    if (time_to_highest <= time_to_lowest) {
-      next_min = time_to_highest;
-      s = -2;
+      if (time_to_highest <= time_to_lowest) {
+        next_min = time_to_highest;
+        s = -2;
+      } else {
+        next_min = time_to_lowest;
+        s = -3;
+      }
+
+      h = next_min / 60;
+      m = next_min % 60;
+
     } else {
-      next_min = time_to_lowest;
-      s = -3;
-    }
-
-    h = next_min / 60;
-    m = next_min % 60;
-
-  } else {
+  #endif
     if (current_minutes > sr && current_minutes < ss) {
       int nxtset = ss - current_minutes;
       h = nxtset / 60;
@@ -790,7 +802,9 @@ void Watchy7SEG::drawSunTimes() {
       m = nxtrise % 60;
       s = -3;
     }
-  }
+   #if defined(POLARFUNCTIONS) && POLARFUNCTIONS
+   }
+   #endif
 
   const uint16_t bitmap_w = 10;
   const uint16_t bitmap_h = 16;
@@ -807,6 +821,7 @@ void Watchy7SEG::drawSunTimes() {
       display.drawBitmap(169, 122, NUM_BITMAPS[mdigits[0]], 3, 5, color);
       display.drawBitmap(173, 122, NUM_BITMAPS[mdigits[1]], 3, 5, color);
   }
+  
 }
 
 

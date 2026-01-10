@@ -14,6 +14,7 @@
 // ... you have also set your weather url to unit=imperial
 #define LOC 49.35, 8.65, 1
 #define LOC_TZ 1.0
+#define POLARFUNCTIONS false
 #define OPENWEATHERMAP_URL "https://api.openweathermap.org/data/3.0/onecall?lat=49.35&lon=8.6&exclude=minutely,hourly,daily,alerts&appid=yourapikey&units=metric&lang=de" // open weather api
 #define WLAN_SSID "myWLAN"
 #define WLAN_PWD "myWLANPWD"
@@ -23,7 +24,7 @@
 	#define WLAN_IP "192.168.0.199"	// enter a static ip address outside of the routers dynamic range
 	#define WLAN_GATEWAY "192.168.0.1" // only needed if WLAN_IP is not an empty string
 	#define WLAN_SUBNET "255.255.255.0" // only needed if WLAN_IP is not an empty string
-	#define WLAN_DNS "8.8.8.8" // only needed if WLAN_IP is not an empty string, perhaps use GATEWAY IP to speed up
+	#define WLAN_DNS "192.168.0.199" // only needed if WLAN_IP is not an empty string, perhaps use GATEWAY IP to speed up
 #endif
 
 #define WEEKDAY_SUN "Sunday"
