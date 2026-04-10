@@ -98,7 +98,9 @@ public:
   bool connectWiFi();
   weatherData getWeatherData(String url);
   void updateFWBegin();
-  bool isDST(time_t t);
+  void readLocalTime();
+  time_t getUTC();
+  bool isDST(time_t utcTime);
 
   void showWatchFace(bool partialRefresh);
   virtual void drawWatchFace(); // override this method for different watch
@@ -119,5 +121,6 @@ extern RTC_DATA_ATTR BMA423 sensor;
 extern RTC_DATA_ATTR bool WIFI_CONFIGURED;
 extern RTC_DATA_ATTR bool BLE_CONFIGURED;
 extern RTC_DATA_ATTR bool USB_PLUGGED_IN;
+extern RTC_DATA_ATTR long gmtOffset;
 
 #endif

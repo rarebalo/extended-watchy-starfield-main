@@ -1124,9 +1124,7 @@ bool Watchy::syncNTP() {
 }
 
 bool Watchy::syncNTP(long gmt) {
-  time_t currentTime = now();
-  long dstOffset = isDST(currentTime) ? 3600 : 0;
-  return syncNTP(gmt + dstOffset, settings.ntpServer.c_str());
+  return syncNTP(gmt, settings.ntpServer.c_str());
 }
 
 bool Watchy::syncNTP(long gmt, String ntpServer) {
@@ -1159,7 +1157,9 @@ bool Watchy::isDST(time_t t) {
 
   // Überprüfe den März
   if (ti->tm_mon == 2) {
-    int lastSundayInMarch = (31 - (5 * ti->tm_wday + 4) % 7);
+    int daysInMonth = 31;
+    int wdayOfLastDay = (ti->tm_wday + (daysInMonth - 1 - ti->tm_mday)) % 7;
+    int lastSundayInMarch = daysInMonth - ((wdayOfLastDay - 0 + 7) % 7);
     if (ti->tm_mday >= lastSundayInMarch) {
       return true;
     }
@@ -1167,7 +1167,9 @@ bool Watchy::isDST(time_t t) {
 
   // Überprüfe den Oktober
   if (ti->tm_mon == 9) {
-    int lastSundayInOctober = (31 - (5 * ti->tm_wday + 4) % 7);
+    int daysInMonth = 31;
+    int wdayOfLastDay = (ti->tm_wday + (daysInMonth - 1 - ti->tm_mday)) % 7;
+    int lastSundayInOctober = daysInMonth - ((wdayOfLastDay - 0 + 7) % 7);
     if (ti->tm_mday < lastSundayInOctober) {
       return true;
     }

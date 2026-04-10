@@ -107,7 +107,7 @@ void Watchy7SEG::handleButtonPress() {
       display.init(0, false);
       int rememberDM = DISPMODE;
       DISPMODE = DISMODE_SECS;
-      RTC.read(currentTime);
+      readLocalTime();
       drawWatchFace();
       const int16_t clearX = 115;
       const int16_t clearY = 66;
@@ -124,11 +124,11 @@ void Watchy7SEG::handleButtonPress() {
       bool timeout = false;
       long lastTimeout = millis();
       long startTimeout = millis();
-      RTC.read(currentTime);
+      readLocalTime();
       int oldSec = currentTime.Second;
       while (!timeout) {
         if (millis() - lastTimeout > 100) {
-          RTC.read(currentTime);
+            readLocalTime();
           if (currentTime.Second != oldSec) {
             oldSec = currentTime.Second;
             drawSeconds();
@@ -160,7 +160,7 @@ void Watchy7SEG::handleButtonPress() {
       }
       DISPMODE = rememberDM;
       guiState = WATCHFACE_STATE;
-      RTC.read(currentTime);
+      readLocalTime();
       showWatchFace(true);
       return;
     }
@@ -171,14 +171,14 @@ void Watchy7SEG::handleButtonPress() {
         DISPMODE = DISMODE_MOON;
       if (DISPMODE == DISMODE_WEATHER)
         firstWeatherNotDone = true;
-      RTC.read(currentTime);
+      readLocalTime();
       showWatchFace(true);
       display.display(false);
       return;
     }
     if (wakeupBit & BACK_BTN_MASK) {
       DARKMODE = !DARKMODE;
-      RTC.read(currentTime);
+      readLocalTime();
       showWatchFace(true);
       return;
     }
@@ -538,9 +538,9 @@ void Watchy7SEG::drawMoonTimes() {
     int moon_rise_h, moon_rise_m;
     int moon_set_h, moon_set_m;
     
-    time_t now_local = now(); 
-    long offset_sec = GMT_OFFSET_SEC + (Watchy::isDST(now_local) ? 3600L : 0L);
-    time_t now_utc = now_local - offset_sec;
+    time_t now_utc = getUTC();
+    long dstOff = Watchy::isDST(now_utc) ? 3600L : 0L;
+    long offset_sec = gmtOffset + dstOff;
     
     int year = currentTime.Year + 1970;
     int32_t month = currentTime.Month;
@@ -567,9 +567,8 @@ void Watchy7SEG::drawMoonTimes() {
             display.drawBitmap(116, 67, notvisible, 37, 5, color);
         }
     } else {
-        long offset_sec = GMT_OFFSET_SEC + (Watchy::isDST(now_local) ? 3600L : 0L); 
-        time_t mr_local_time = moonRise.riseTime + offset_sec; // UTC + Offset
-        time_t ms_local_time = moonRise.setTime + offset_sec;  // UTC + Offset
+        time_t mr_local_time = moonRise.riseTime + offset_sec;
+        time_t ms_local_time = moonRise.setTime + offset_sec;
         long rise_seconds_since_midnight = mr_local_time % 86400L;
         long set_seconds_since_midnight = ms_local_time % 86400L;
         if (set_seconds_since_midnight < 0) {
@@ -600,8 +599,8 @@ void Watchy7SEG::drawMoonTimes() {
 }
 
 void Watchy7SEG::drawSun() {
-  time_t ct = now();
-  bool isDST = Watchy::isDST(ct);
+  time_t utc = getUTC();
+  bool isDST = Watchy::isDST(utc);
   int year = currentTime.Year + 1970;
   int32_t month = currentTime.Month;
   int32_t day = currentTime.Day;
@@ -679,8 +678,8 @@ void Watchy7SEG::drawSunTimes() {
   float lat = GET_LATITUDE((LOC)); 
   float lon = GET_LONGITUDE((LOC));
   float tz = LOC_TZ;
-  time_t ct = now();
-  bool isDST = Watchy::isDST(ct);
+  time_t utc = getUTC();
+  bool isDST = Watchy::isDST(utc);
   int sr = WatchyDusk2Dawn::sunrise(year, month, day, lat, lon, tz, isDST);
   int ss = WatchyDusk2Dawn::sunset(year, month, day, lat, lon, tz, isDST);
   int now_minutes = currentTime.Hour * 60 + currentTime.Minute;

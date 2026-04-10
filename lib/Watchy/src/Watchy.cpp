@@ -52,7 +52,7 @@ void Watchy::init(String datetime) {
 #else
   case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
 #endif
-    RTC.read(currentTime);
+    readLocalTime();
     switch (guiState) {
     case WATCHFACE_STATE:
       showWatchFace(true); // partial updates on tick
@@ -82,7 +82,7 @@ void Watchy::init(String datetime) {
     pinMode(USB_DET_PIN, INPUT);
     USB_PLUGGED_IN = (digitalRead(USB_DET_PIN) == 1);
     if (guiState == WATCHFACE_STATE) {
-      RTC.read(currentTime);
+      readLocalTime();
       showWatchFace(true);
     }
     break;
@@ -95,7 +95,7 @@ void Watchy::init(String datetime) {
     USB_PLUGGED_IN = (digitalRead(USB_DET_PIN) == 1);
 #endif
     gmtOffset = settings.gmtOffset;
-    RTC.read(currentTime);
+    readLocalTime();
     RTC.read(bootTime);
     showWatchFace(false); // full update on reset
     vibMotor(75, 4);
@@ -193,7 +193,7 @@ void Watchy::handleButtonPress() {
   // Back Button
   else if (wakeupBit & BACK_BTN_MASK) {
     if (guiState == MAIN_MENU_STATE) { // exit to watch face if already in menu
-      RTC.read(currentTime);
+      readLocalTime();
       showWatchFace(false);
     } else if (guiState == APP_STATE) {
       showMenu(menuIndex, false); // exit to menu if already in app
@@ -275,7 +275,7 @@ void Watchy::handleButtonPress() {
         lastTimeout = millis();
         if (guiState ==
             MAIN_MENU_STATE) { // exit to watch face if already in menu
-          RTC.read(currentTime);
+          readLocalTime();
           showWatchFace(false);
           break; // leave loop
         } else if (guiState == APP_STATE) {
@@ -391,9 +391,8 @@ void Watchy::showAbout() {
 
 #ifndef ARDUINO_ESP32S3_DEV
   display.print("Uptime: ");
-  RTC.read(currentTime);
   time_t b = makeTime(bootTime);
-  time_t c = makeTime(currentTime);
+  time_t c = getUTC();
   int totalSeconds = c - b;
   // int seconds = (totalSeconds % 60);
   int minutes = (totalSeconds % 3600) / 60;
@@ -442,11 +441,26 @@ void Watchy::vibMotor(uint8_t intervalMs, uint8_t length) {
   }
 }
 
+void Watchy::readLocalTime() {
+  tmElements_t utcTm;
+  RTC.read(utcTm);
+  time_t utc = makeTime(utcTm);
+  long dstOff = isDST(utc) ? 3600 : 0;
+  time_t local = utc + gmtOffset + dstOff;
+  breakTime(local, currentTime);
+}
+
+time_t Watchy::getUTC() {
+  tmElements_t utcTm;
+  RTC.read(utcTm);
+  return makeTime(utcTm);
+}
+
 void Watchy::setTime() {
 
   guiState = APP_STATE;
 
-  RTC.read(currentTime);
+  readLocalTime();
 
 #ifdef ARDUINO_ESP32S3_DEV
   uint8_t minute = currentTime.Minute;
@@ -593,19 +607,26 @@ void Watchy::setTime() {
     display.display(true); // partial refresh
   }
 
-  tmElements_t tm;
-  tm.Month = month;
-  tm.Day = day;
+  tmElements_t localTm;
+  localTm.Month = month;
+  localTm.Day = day;
 #ifdef ARDUINO_ESP32S3_DEV
-  tm.Year = year;
+  localTm.Year = year;
 #else
-  tm.Year = y2kYearToTm(year);
+  localTm.Year = y2kYearToTm(year);
 #endif
-  tm.Hour = hour;
-  tm.Minute = minute;
-  tm.Second = 0;
+  localTm.Hour = hour;
+  localTm.Minute = minute;
+  localTm.Second = 0;
 
-  RTC.set(tm);
+  time_t localEpoch = makeTime(localTm);
+  time_t approxUtc = localEpoch - gmtOffset;
+  long dstOff = isDST(approxUtc) ? 3600 : 0;
+  time_t utc = localEpoch - gmtOffset - dstOff;
+
+  tmElements_t utcTm;
+  breakTime(utc, utcTm);
+  RTC.set(utcTm);
 
   showMenu(menuIndex, false);
 }
@@ -1143,15 +1164,16 @@ void Watchy::showSyncNTP() {
   display.setTextColor(GxEPD_WHITE);
   display.setCursor(0, 30);
   display.println("Syncing NTP... ");
-  display.print("GMT offset: ");
-  display.println(gmtOffset);
+  display.print("UTC offset: ");
+  display.print(gmtOffset / 3600);
+  display.println("h");
   display.display(false); // full refresh
   if (connectWiFi()) {
     if (syncNTP()) {
       display.println("NTP Sync Success\n");
-      display.println("Current Time Is:");
+      display.println("Local Time:");
 
-      RTC.read(currentTime);
+      readLocalTime();
 
       display.print(tmYearToCalendar(currentTime.Year));
       display.print("/");
@@ -1183,15 +1205,11 @@ void Watchy::showSyncNTP() {
 }
 
 bool Watchy::syncNTP() {
-  time_t currentTime = now();
-  long dstOffset = isDST(currentTime) ? 3600 : 0;
-  return syncNTP(gmtOffset + dstOffset, settings.ntpServer.c_str());
+  return syncNTP(0, settings.ntpServer.c_str());
 }
 
 bool Watchy::syncNTP(long gmt) {
-  time_t currentTime = now();
-  long dstOffset = isDST(currentTime) ? 3600 : 0;
-  return syncNTP(gmt + dstOffset, settings.ntpServer.c_str());
+  return syncNTP(gmt, settings.ntpServer.c_str());
 }
 
 bool Watchy::syncNTP(long gmt, String ntpServer) {
@@ -1209,33 +1227,27 @@ bool Watchy::syncNTP(long gmt, String ntpServer) {
   return true;
 }
 
-// Funktion zur Überprüfung, ob die Sommerzeit aktiv ist
-bool Watchy::isDST(time_t t) {
-  struct tm *ti = localtime(&t);
-  // Sommerzeit in Europa ist vom letzten Sonntag im März
-  // bis zum letzten Sonntag im Oktober.
-  // tm_mon: 0=Jan, 1=Feb, ... 11=Dez
-  // tm_wday: 0=So, 1=Mo, ... 6=Sa
+bool Watchy::isDST(time_t utcTime) {
+  time_t standardLocal = utcTime + gmtOffset;
+  struct tm ti;
+  gmtime_r(&standardLocal, &ti);
 
-  // Überprüfe die Monate dazwischen
-  if (ti->tm_mon > 2 && ti->tm_mon < 9) { // April bis September
-    return true;
+  if (ti.tm_mon < 2 || ti.tm_mon > 9) return false;
+  if (ti.tm_mon > 2 && ti.tm_mon < 9) return true;
+
+  int wdayOfLast = (ti.tm_wday + (31 - ti.tm_mday)) % 7;
+  int lastSunday = 31 - wdayOfLast;
+
+  if (ti.tm_mon == 2) {
+    if (ti.tm_mday > lastSunday) return true;
+    if (ti.tm_mday == lastSunday && ti.tm_hour >= 2) return true;
+    return false;
   }
 
-  // Überprüfe den März
-  if (ti->tm_mon == 2) {
-    int lastSundayInMarch = (31 - (5 * ti->tm_wday + 4) % 7);
-    if (ti->tm_mday >= lastSundayInMarch) {
-      return true;
-    }
-  }
-
-  // Überprüfe den Oktober
-  if (ti->tm_mon == 9) {
-    int lastSundayInOctober = (31 - (5 * ti->tm_wday + 4) % 7);
-    if (ti->tm_mday < lastSundayInOctober) {
-      return true;
-    }
+  if (ti.tm_mon == 9) {
+    if (ti.tm_mday < lastSunday) return true;
+    if (ti.tm_mday == lastSunday && ti.tm_hour < 2) return true;
+    return false;
   }
 
   return false;
