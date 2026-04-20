@@ -2,8 +2,8 @@
 #define SETTINGS_H
 
 // =================================================================================
-#define NTP_SERVER "pool.ntp.org"
-#define GMT_OFFSET_SEC 3600L
+#define NTP_SERVER "south-america.pool.ntp.org"
+#define GMT_OFFSET_SEC -14400L
 
 #define DISPLAYTYPE 1
 // 1 == correct working display
@@ -12,12 +12,12 @@
 #define HOUR24 true
 #define METRIC true
 // ... you have also set your weather url to unit=imperial
-#define LOC 49.35, 8.65, 1
-#define LOC_TZ 1.0
+#define LOC -26.813, -65.295, -3.0
+#define LOC_TZ -4.0
 #define POLARFUNCTIONS false
-#define OPENWEATHERMAP_URL "https://api.openweathermap.org/data/3.0/onecall?lat=49.35&lon=8.6&exclude=minutely,hourly,daily,alerts&appid=yourapikey&units=metric&lang=de" // open weather api
-#define WLAN_SSID "myWLAN"
-#define WLAN_PWD "myWLANPWD"
+#define OPENWEATHERMAP_URL "https://api.openweathermap.org/data/3.0/onecall?lat=-26.813&lon=-65.295&exclude=minutely,hourly,daily,alerts&appid=5963e3487a98a84de9cac648ef8c7b99&units=metric&lang=es" // open weather api
+#define WLAN_SSID "casaR2.4"
+#define WLAN_PWD "4252619casa"
 // power saving WLAN configuration if wanted:
 #define USE_STATIC_IP false
 #if USE_STATIC_IP
@@ -27,15 +27,15 @@
 	#define WLAN_DNS "192.168.0.199" // only needed if WLAN_IP is not an empty string, perhaps use GATEWAY IP to speed up
 #endif
 
-#define WEEKDAY_SUN "Sunday"
-#define WEEKDAY_MON "Monday"
-#define WEEKDAY_TUS "Tuesday"
-#define WEEKDAY_WEN "Wednesday"
-#define WEEKDAY_THU "Thursday"
-#define WEEKDAY_FRI "Friday"
-#define WEEKDAY_SAT "Saturday"
+#define WEEKDAY_SUN "Domingo"
+#define WEEKDAY_MON "Lunes"
+#define WEEKDAY_TUS "Martes"
+#define WEEKDAY_WEN "Miercoles"
+#define WEEKDAY_THU "Jueves"
+#define WEEKDAY_FRI "Viernes"
+#define WEEKDAY_SAT "Sabado"
 #define WEEKDAY_MAXNoOFCHARS 3
-#define MONTH_JAN "Jan"
+#define MONTH_JAN "Ene"
 #define MONTH_FEB "Feb"
 #define MONTH_MAR "Mar"
 #define MONTH_APR "Apr"
@@ -46,7 +46,7 @@
 #define MONTH_SEP "Sep"
 #define MONTH_OCT "Oct"
 #define MONTH_NOV "Nov"
-#define MONTH_DEC "Dec"
+#define MONTH_DEC "Dic"
 
 // =================================================================================
 
