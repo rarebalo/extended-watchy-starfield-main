@@ -16,8 +16,8 @@
 #define LOC_TZ -4.0
 #define POLARFUNCTIONS false
 #define OPENWEATHERMAP_URL "https://api.openweathermap.org/data/3.0/onecall?lat=-26.813&lon=-65.295&exclude=minutely,hourly,daily,alerts&appid=5963e3487a98a84de9cac648ef8c7b99&units=metric&lang=es" // open weather api
-#define WLAN_SSID "casaR2.4"
-#define WLAN_PWD "4252619casa"
+#define WLAN_SSID "ssid"
+#define WLAN_PWD "pass"
 // power saving WLAN configuration if wanted:
 #define USE_STATIC_IP false
 #if USE_STATIC_IP
