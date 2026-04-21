@@ -15,7 +15,7 @@
 #define LOC -26.813, -65.295, -3.0
 #define LOC_TZ -4.0
 #define POLARFUNCTIONS false
-#define OPENWEATHERMAP_URL "https://api.openweathermap.org/data/3.0/onecall?lat=-26.813&lon=-65.295&exclude=minutely,hourly,daily,alerts&appid=5963e3487a98a84de9cac648ef8c7b99&units=metric&lang=es" // open weather api
+#define OPENWEATHERMAP_URL "api" // open weather api
 #define WLAN_SSID "ssid"
 #define WLAN_PWD "pass"
 // power saving WLAN configuration if wanted:
